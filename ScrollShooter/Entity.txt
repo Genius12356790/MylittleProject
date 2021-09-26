@@ -1,0 +1,2 @@
+0>{'fspd':0.1, 'vx':0, 'vy':0.5, 'dimg':3, 'bul':[{'x': 6, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1}, {'x': 16, 'y': 5, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1}, {'x': 26, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1}], 'simg':2, 'x':200, 'y':0, 'type':'enemy', 'hp':3, 'score':75, 'static':1}
+1>{'fspd':0.1, 'dimg':3, 'bul':[{'x': 6, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1}, {'x': 16, 'y': 5, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1}, {'x': 26, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1}], 'simg':1, 'x':200, 'y':0, 'type':'player'}

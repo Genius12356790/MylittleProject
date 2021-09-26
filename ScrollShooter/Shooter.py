@@ -1,15 +1,17 @@
 import pygame
 import os
 import sys
+import time
 
-FPS = 50
+FRAMETIME = 1/60
+ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':300, 'y':0, 'type':'enemy', 'hp':3, 'score':50, 'static':1}
 
 
 class Object(pygame.sprite.Sprite):
     def __init__(self, _, x, y):
-        super().__init__(obj, sprites)
+        super().__init__(obj)
         self.image = oimages[0]
-        self.image = cut(self.image)
+        self.image = self.image
         self.rect = self.image.get_rect().move(x, y)
 
 
@@ -19,196 +21,148 @@ def cut(image):
     return image
 
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y, imn=0, bimn=0, bvx=0, bvy=0, vx=0, vy=0, static=0, fspd=0.02, hp=5, score=50):
-        super().__init__(enemy, sprites)
-        self.image = imagess[imn]
-        self.image = cut(self.image)
-        self.rect = self.image.get_rect().move(x, y)
-        self.size = self.image.get_rect().size
-        self.x = self.rect.x
-        self.y = self.rect.y
-        self.vx = vx
-        self.vy = vy
-        self.bvx = bvx
-        self.bvy = bvy
-        self.bimn = bimn
-        self.static = static
-        self.fire = 0
-        self.fspd = fspd
-        self.hp = hp
-        self.score = score
-
-    def update(self, mode=0, x=0, y=0, imn=0, ppos=0, vx=0, vy=0, dmg=1):
-        global score
-        if mode == 0:
-            self.x += self.vx
-            self.y += self.vy
-            self.rect.x = int(self.x) + (ppos) // 5
-            self.rect.y = int(self.y)
-            self.fire += self.fspd
-            if self.fire > 1:
-                self.fire -= 1
-                EBullet(self.rect.x, self.rect.y, self.size, imn=self.bimn, vx=self.bvx, vy=self.bvy, ppos=-ppos)
-            if self.rect.y > 640 or self.rect.y < -100:
-                self.kill()
-        if mode == 1:
-            self.hp -= 1
-            if self.hp < 0:
-                score += self.score
-                self.kill()
-        if mode == 2:
-            self.y += 1 * 1 - self.static
-            self.rect.y = y
-
-
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, size=(16, 16), imn=0, vx=0, vy=0, ppos=0, dmg=1):
-        super().__init__(bull, sprites)
-        self.image = imagess[imn]
-        self.image = cut(self.image)
-        self.rect = self.image.get_rect()
-        self.size = self.size = self.image.get_rect().size
-        self.x = x + size[0] // 2 - self.size[0] // 2 + (ppos // 5)
-        self.rect.x = self.x - ppos // 5
-        self.rect.y = y + size[1] // 2 - self.size[1] // 2
-        self.vx = vx
-        self.vy = vy
-        self.dmg = dmg
+    def __init__(self, x, y, data, camx):
+        if data['type'] == 'enemy':
+            super().__init__(bull, ebull)
+        else:
+            super().__init__(bull)
+        self.data = {}
+        self.setup(data)
+        self.data['x'] += x
+        self.data['y'] += y
+        self.rect.x = self.data['x'] - camx
+        self.rect.y = self.data['y']
+        
+    def setup(self, kwargs):
+        for _ in kwargs:
+            self.data[_] = kwargs[_]
+            if _ == 'bimg':
+                self.image = imagess[self.data['bimg']]
+                self.image = self.image
+                self.data['size'] = self.image.get_rect().size
+                self.rect = self.image.get_rect()
 
-    def update(self, ppos=0):
-        if self.rect.y < -100 or self.rect.y > 640 or self.rect.x > 600 or self.rect.x < -100:
+    def update(self, camx=0): # move&collidle
+        if self.rect.y < -100 or self.rect.y > 740 or self.rect.x > 740 or self.rect.x < -100:
             self.kill()
-        self.x += self.vx
-        self.rect.x = self.x + (ppos // 5)
-        self.rect.y += self.vy
-        h = pygame.sprite.spritecollide(self, enemy, False)
-        if h:
-            h[0].update(mode=1, dmg=self.dmg)
-            self.kill()
-
-
-class EBullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, size=(16, 16), imn=0, vx=0, vy=0, ppos=0):
-        super().__init__(ebull, sprites)
-        self.image = imagess[imn]
-        self.image = cut(self.image)
-        self.rect = self.image.get_rect()
-        self.size = self.size = self.image.get_rect().size
-        self.x = x + size[0] // 2 - self.size[0] // 2 + (ppos // 5)
-        self.rect.x = self.x - ppos // 5
-        self.rect.y = y + size[1] // 2 - self.size[1] // 2
-        self.vx = vx
-        self.vy = vy
-
-    def update(self, ppos=0):
-        if self.rect.y < -100 or self.rect.y > 640:
-            self.kill()
-        self.x += self.vx
-        self.rect.x = self.x + (ppos // 5)
-        self.rect.y += self.vy
-
-
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__(player, sprites)
-        self.image = imagess[0]
-        self.image = cut(self.image)
-        self.rect = self.image.get_rect().move(0, 0)
-        self.size = self.image.get_rect().size
-        self.fire = 0
-        self.fspd = 0.066
-        self.bimn = 0
-        self.bvx = 0
-        self.bvy = 0
-        self.dmg = 1
-        self.dimn = 0
-
-    def update(self, mode=0, x=0, y=0, imn=0, fspd=0.066, dmg=1, dimn=0):
-        if mode == 0:
-            if x < 0:
-                if self.rect.x + x >= 0:
-                    self.rect.x += x
-            if x > 0:
-                if self.rect.x + x <= 480 - self.size[0]:
-                    self.rect.x += x
-            if y < 0:
-                if self.rect.y + y >= 0:
-                    self.rect.y += y
-            if y > 0:
-                if self.rect.y + y <= 640 - self.size[1]:
-                    self.rect.y += y
-        if mode == 1:
-            self.fire += self.fspd
-            if self.fire > 1:
-                self.fire -= 1
-                Bullet(self.rect.x, self.rect.y, self.size, imn=self.bimn, ppos=self.rect.x, vx=self.bvx, vy=self.bvy)
-            h = pygame.sprite.spritecollide(self, ebull, False)
+        self.data['x'] += self.data['vx']
+        self.rect.x = self.data['x'] - camx
+        self.data['y'] += self.data['vy']
+        self.rect.y = self.data['y']
+        if self.data['type'] == 'player':
+            h = pygame.sprite.spritecollide(self, enemy, False)
             if h:
-                h[0].kill()
-                self.image = cut(imagess[self.dimn])
-                self.fspd = 0
-        if mode == 2:
-            self.fspd = fspd
-            self.image = imagess[imn]
-            self.image = cut(self.image)
-            self.size = self.image.get_rect().size
-            self.dmg = dmg
-            self.dimn = dimn
-        if mode == 3:
-            self.bimn = imn
-            self.bvx = x
-            self.bvy = y
-        if mode == 4:
-            self.rect.x = x
-            self.rect.y = y
+                h[0].update(mode=3, dmg=self.data['dmg'])
+                self.kill()
 
+
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, base, **kwargs):
+        self.data = {}
+        self.setup(ENTITY_BASE_DATA)
+        self.setup(base)
+        self.setup(kwargs)
+        if self.data['type'] == 'player':
+            super().__init__(player)
+        else:
+            super().__init__(enemy)
+        
+    def setup(self, kwargs):
+        for _ in kwargs:
+            self.data[_] = kwargs[_]
+            if _ == 'simg':
+                self.image = imagess[self.data['simg']]
+                self.image = self.image
+                self.data['size'] = self.image.get_rect().size
+                self.rect = self.image.get_rect().move(0, 0)
+            elif _ == 'x':
+                self.rect.x = self.data['x']
+            elif _ == 'y':
+                self.rect.y = self.data['y']
+
+    def update(self, mode=0, x=0, y=0, img=0, fspd=0.066, dmg=1, dimg=0, camx=0, kwargs={}, keys=[0, 0, 0, 0]):
+        global score
+        if mode == 0: # move player
+            if keys[1]:
+                self.data['x'] = max(self.data['x'] - 2, 0)
+            if keys[3]:
+                self.data['x'] = min(self.data['x'] + 2, 640 - self.data['size'][0])
+            if keys[0]:
+                self.data['y'] = max(self.data['y'] - 2, 0)
+            if keys[2]:
+                self.data['y'] = min(self.data['y'] + 2, 640 - self.data['size'][1])
+            self.rect.x = self.data['x'] - camx
+            self.rect.y = self.data['y']
+        elif mode == 1: # tick
+            self.data['fire'] += self.data['fspd']
+            if self.data['fire'] > 1:
+                self.data['fire'] -= 1
+                for dat in self.data['bul']:
+                    data = dat
+                    data['type'] = self.data['type']
+                    Bullet(x=self.data['x'], y=self.data['y'], data=data, camx=camx)
+            if self.data['type'] == 'player':
+                h = pygame.sprite.spritecollide(self, ebull, False)
+                if h:
+                    player.update(mode=3)
+        elif mode == 2: # setup
+            self.setup(kwargs)
+        elif mode == 3: # death
+            if self.data['type'] == 'player':
+                self.image = imagess[self.data['dimg']]
+                self.data['fspd'] = 0                
+            elif self.data['type'] == 'enemy':
+                self.data['hp'] -= dmg
+                if self.data['hp'] < 1:
+                    score += self.data['score']
+                    self.kill()
+        elif mode == 4: # set position
+            self.data['x'] += self.data['vx']
+            self.data['y'] += self.data['vy']
+            self.rect.x = self.data['x'] - camx
+            self.rect.y = self.data['y']
+        elif mode == 5: # entity with tiles
+            if self.data['static']:
+                self.rect.y += 1
 
 class Tile(pygame.sprite.Sprite):
-    def __init__(self, pos):
-        super().__init__(win, sprites)
-        pos += (pos // 31) * 8
+    def __init__(self, posa, posb):
+        super().__init__(win)
         self.image = images[0]
-        self.rect = self.image.get_rect().move(
-            16 * (pos % 39), 16 * (pos // 39))  # width, height
-        self.pos = pos
-        self.basepos = pos
-        self.poss = pos
-        self.mx = 0
+        self.x = posa * 16
+        self.y = posb * 16
+        self.rect = self.image.get_rect().move(self.x, self.y) # width, height
+        self.filex = posa
+        self.filey = posb - 40
 
-    def update(self, mode=0, x=0, y=0, ppos=0):
-        if mode == 0:
-            self.rect.y += 1
-            if self.rect.y >= 640:
-                self.poss -= 39
-                self.rect.y = -16
-                mx = ppos // 80
-                self.mx = mx
-                self.pos = self.poss - mx
-                self.image = images[ord(bg[((self.pos // 39) - 41) % bgy][(self.pos % 39) % bgx]) - 32]
-        if mode == 1:
-            self.pos = self.basepos
-            pos = self.pos
-            self.rect.x = 16 * (pos % 39)
-            self.rect.y = 16 * (pos // 39) - 16
-            self.image = images[ord(bg[((self.pos // 39) - 41) % bgy][(self.pos % 39) % bgx]) - 32]
-        if mode == 2:
-            mx = ppos // 80
-            if self.mx != mx:
-                self.mx = mx
-                self.pos = self.poss - mx
-                self.image = images[ord(bg[((self.pos // 39) - 41) % bgy][(self.pos % 39) % bgx]) - 32]
-            self.rect.x = (self.poss % 39) * 16 - 16 + (ppos // 5) % 16
+    def update(self, mode=0, camx=0):
+        if mode == 0: # y-tick
+            self.y += 1
+            if self.y >= 640:
+                self.filey -= 39
+                self.y = -16
+                self.image = images[ord(bg[self.filey % bgy][self.filex % bgx]) - 32]
+        if mode == 1: # set position
+            self.rect.x = self.x - camx
+            self.rect.y = self.y
+            self.image = images[ord(bg[self.filey % bgy][self.filex % bgx]) - 32]
 
 
 def play(spd=0.1):
+    camx = 0
     ypos = 0
     mappos = 0
     tick = 0
-    win.update(mode=1)
     keys = [False] * 4
+    lastframe = time.process_time()
+    fps = 0
+    fpsc = 0
+    tps = 0
+    tpsc = 0
+    lastsec = 0
     while True:
-        ppos = -player.sprites()[0].rect.x
+        camx = player.sprites()[0].data['x'] // 4
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
@@ -230,55 +184,81 @@ def play(spd=0.1):
                     keys[2] = False
                 if event.key == pygame.K_RIGHT:
                     keys[3] = False
-        if keys[0]:
-            player.update(y=-2)
-        if keys[1]:
-            player.update(x=-2)
-        if keys[2]:
-            player.update(y=2)
-        if keys[3]:
-            player.update(x=2)
-        player.update(mode=1)
+        player.update(keys=keys, camx=camx)
+        player.update(mode=1, camx=camx)
         tick += spd
         if tick > 1:
             tick -= 1
             win.update()
-            enemy.update(mode=2)
+            enemy.update(mode=5)
             ypos += 1
             while len(emap) != mappos:
-                if ypos == int(emap[mappos].split(':')[0]):
-                    eval(emap[mappos].split(':')[1])
+                if ypos == int(emap[mappos].split('>')[0]):
+                    eval(emap[mappos].split('>')[1])
                     mappos += 1
                 else:
                     break
         s = score
         for sp in range(10):
             if s or not sp:
-                sc[sp].image = cut(oimages[s % 10])
+                sc[sp].image = oimages[s % 10]
             else:
-                sc[sp].image = cut(oimages[10])
+                sc[sp].image = oimages[10]
             s = s // 10
-        win.update(mode=2, ppos=ppos)
-        bull.update(ppos=ppos)
-        ebull.update(ppos=ppos)
-        enemy.update(ppos=ppos)
+        win.update(mode=1, camx=camx)
+        bull.update(camx=camx)
+        enemy.update(mode=1, camx=camx)
+        enemy.update(camx=camx, mode=4)
         obj.update()
-        win.draw(screen)
-        enemy.draw(screen)
-        bull.draw(screen)
-        ebull.draw(screen)
-        player.draw(screen)
-        obj.draw(screen)
-        pygame.display.flip()
-        clock.tick(FPS)
+        while time.process_time() < lastframe + FRAMETIME:
+            pass
+        lastframe += FRAMETIME
+        prtime = time.process_time()
+        if lastframe + 0.1 < prtime:
+            lastframe = prtime          
+        if lastframe + FRAMETIME > prtime:
+            draw(fps, tps)       
+            fpsc += 1               
+        tpsc += 1
+        if lastsec + 1 < prtime:
+            lastsec = lastframe
+            fps = fpsc
+            fpsc = 0
+            tps = tpsc
+            tpsc = 0
+            
+def draw(fps, tps):
+    #pygame.draw.rect(screen, (0, 0, 0), (0, 0, 480, 640))
+    win.draw(screen)
+    enemy.draw(screen)
+    bull.draw(screen)
+    player.draw(screen)
+    obj.draw(screen)  
+    if fps < 0.9 * 1 / FRAMETIME:
+        textout(str(fps), [400, 0], size=10, color=(250 * (1 / FRAMETIME - fps) * FRAMETIME, 250 * fps * FRAMETIME, 50))
+    if tps < 0.95 * 1 / FRAMETIME:
+        textout(str(int(tps * FRAMETIME * 100)) + '%', [430, 0], size=10, color=(250 * (1 / FRAMETIME - tps) * FRAMETIME, 250 * tps * FRAMETIME, 50))
+    pygame.display.flip()    
+        
+def initgame():
+    global sc
+    for _ in range(40):
+        for __ in range(41):
+            Tile(_, __)
+    for _ in range(10):
+        x = (9 - _) * 16
+        Object(_, x, 0)
+    sc = obj.sprites()
 
 
 def load_bg(spriteset):
-    return [pygame.image.load('BG/{}.png'.format(a)) for a in spriteset]
+    global images
+    images = [pygame.image.load('BG/{}.png'.format(a)).convert() for a in spriteset]
 
 
 def load_images(spriteset):
-    return [pygame.image.load('Pic/{}.png'.format(a)) for a in spriteset]
+    global imagess
+    imagess = [cut(pygame.image.load('Pic/{}.png'.format(a))).convert() for a in spriteset]
 
 
 def terminate():
@@ -287,20 +267,25 @@ def terminate():
 
 
 def load_level(num):
-    return [a.strip('\n') for a in open("BG/{}.txt".format(num), 'r').readlines()]
+    global bgx, bgy, bg
+    bg = [a.strip('\n') for a in open("BG/{}.txt".format(num), 'r').readlines()]
+    bgy = len(bg)
+    bgx = len(bg[0])
 
 
 def load_map(num):
-    return [a.strip('\n') for a in open("BG/map{}.txt".format(num), 'r').readlines()]
+    global emap
+    emap = [a.strip('\n') for a in open("BG/map{}.txt".format(num), 'r').readlines()]
 
 
 def load_object(spriteset):
-    return [pygame.image.load('Obj/{}.png'.format(a)) for a in spriteset]
-
-
-def toeq(var, data):
-    return [var, data]
-
+    global oimages
+    oimages = [cut(pygame.image.load('Obj/{}.png'.format(a))).convert() for a in spriteset]
+  
+def textout(text, pos, size=30, font='Comic Sans MS', color=(255, 255, 255)):
+    myfont = pygame.font.SysFont(font, size)
+    textsurface = myfont.render(text, False, color)
+    screen.blit(textsurface,(pos))
 
 # init
 pygame.init()
@@ -308,40 +293,23 @@ pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
 size = width, height = 480, 640
 screen = pygame.display.set_mode(size)
 enemy = pygame.sprite.Group()
-sprites = pygame.sprite.Group()
 win = pygame.sprite.Group()
 player = pygame.sprite.Group()
 bull = pygame.sprite.Group()
 ebull = pygame.sprite.Group()
 obj = pygame.sprite.Group()
+camx = 0
 score = 0
-images = load_bg(['0'])
-imagess = load_images(['0'])
-oimages = load_object(['0'])
-clock = pygame.time.Clock()
-for _ in range(31 * 41):
-    Tile(_)
-Player()
-for _ in range(10):
-    x = (9 - _) * 16
-    Object(_, x, 0)
-sc = obj.sprites()
+bgx = 0
+bgy = 0
+images = []
+imagess = []
+oimages = []
+bg = []
+emap = []
+entity = open('Entity.txt').readlines()
+entitys = {}
+for a in entity:
+    aa = a.strip('\n').split('>')
+    entitys[aa[0]] = eval(aa[1])
 
-# main
-mainscript = open('main.txt')
-for a in mainscript:
-    data = eval(a)
-    if data:
-        if data[0] == 'bg':
-            bg = data[1]
-            bgy = len(bg)
-            bgx = len(bg[0])
-        if data[0] == 'images':
-            images = data[1]
-        if data[0] == 'imagess':
-            imagess = data[1]
-        if data[0] == 'emap':
-            emap = data[1]
-        if data[0] == 'obj':
-            oimages = data[1]
-terminate()
