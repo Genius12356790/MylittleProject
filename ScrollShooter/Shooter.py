@@ -2,9 +2,32 @@ import pygame
 import os
 import sys
 import time
+import Scripts
+import random
 
 FRAMETIME = 1/60
 ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':300, 'y':0, 'type':'enemy', 'hp':3, 'score':50, 'static':1}
+
+
+class Upgrade(pygame.sprite.Sprite):
+    def __init__(self, x, y, name):
+        super().__init__(upg)
+        self.data = entitys[name]
+        self.image = imagess[self.data['simg']]
+        self.rect = self.image.get_rect().move(x, y) 
+        self.data['x'] = x
+        self.data['y'] = y
+        
+    def update(self, mode=0, camx=0):
+        if mode == 0:
+            self.data['x'] += self.data['vx']
+            self.rect.x = self.data['x'] - camx
+            self.data['y'] += self.data['vy']
+            self.rect.y = self.data['y']
+        if mode == 1:
+            eval(self.data['func'])
+            self.kill()
+    
 
 
 class Object(pygame.sprite.Sprite):
@@ -106,6 +129,10 @@ class Entity(pygame.sprite.Sprite):
                 h = pygame.sprite.spritecollide(self, ebull, False)
                 if h:
                     player.update(mode=3)
+                h = pygame.sprite.spritecollide(self, upg, False)
+                for a in h:
+                    score += a.data['score']
+                    a.update(mode=1)                
         elif mode == 2: # setup
             self.setup(kwargs)
         elif mode == 3: # death
@@ -116,6 +143,9 @@ class Entity(pygame.sprite.Sprite):
                 self.data['hp'] -= dmg
                 if self.data['hp'] < 1:
                     score += self.data['score']
+                    for a in self.data['drop']:
+                        if random.random() < a[1]:
+                            Upgrade(self.data['x'] + self.data['size'][0] // 2 , self.data['y'] + self.data['size'][1] // 2, a[0])
                     self.kill()
         elif mode == 4: # set position
             self.data['x'] += self.data['vx']
@@ -129,7 +159,7 @@ class Entity(pygame.sprite.Sprite):
 class Tile(pygame.sprite.Sprite):
     def __init__(self, posa, posb):
         super().__init__(win)
-        self.image = images[0]
+        self.image = deftex
         self.x = posa * 16
         self.y = posb * 16
         self.rect = self.image.get_rect().move(self.x, self.y) # width, height
@@ -142,11 +172,11 @@ class Tile(pygame.sprite.Sprite):
             if self.y >= 640:
                 self.filey -= 39
                 self.y = -16
-                self.image = images[ord(bg[self.filey % bgy][self.filex % bgx]) - 32]
+                self.image = images[bg[self.filey % bgy][self.filex % bgx]]
         if mode == 1: # set position
             self.rect.x = self.x - camx
             self.rect.y = self.y
-            self.image = images[ord(bg[self.filey % bgy][self.filex % bgx]) - 32]
+            self.image = images[bg[self.filey % bgy][self.filex % bgx]]
 
 
 def play(spd=0.1):
@@ -209,6 +239,7 @@ def play(spd=0.1):
         bull.update(camx=camx)
         enemy.update(mode=1, camx=camx)
         enemy.update(camx=camx, mode=4)
+        upg.update(camx=camx)
         obj.update()
         while time.process_time() < lastframe + FRAMETIME:
             pass
@@ -233,6 +264,7 @@ def draw(fps, tps):
     enemy.draw(screen)
     bull.draw(screen)
     player.draw(screen)
+    upg.draw(screen)
     obj.draw(screen)  
     if fps < 0.9 * 1 / FRAMETIME:
         textout(str(fps), [400, 0], size=10, color=(250 * (1 / FRAMETIME - fps) * FRAMETIME, 250 * fps * FRAMETIME, 50))
@@ -253,7 +285,7 @@ def initgame():
 
 def load_bg(spriteset):
     global images
-    images = [pygame.image.load('BG/{}.png'.format(a)).convert() for a in spriteset]
+    images = {a: pygame.image.load('BG/{}.png'.format(spriteset[a])).convert() for a in spriteset}
 
 
 def load_images(spriteset):
@@ -298,6 +330,8 @@ player = pygame.sprite.Group()
 bull = pygame.sprite.Group()
 ebull = pygame.sprite.Group()
 obj = pygame.sprite.Group()
+upg = pygame.sprite.Group()
+deftex = pygame.Surface((1, 1))
 camx = 0
 score = 0
 bgx = 0
