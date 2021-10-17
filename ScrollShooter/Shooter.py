@@ -7,7 +7,8 @@ import random
 
 FRAMETIME = 1/60
 ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 0.5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':320, 'y':480, 'type':'enemy', 'hp':3, 'score':50, 'static':1, 'lives':0, 'level':0, 'levels':[], 'shield': 120}
-OBJECT_BASE_DATA = {'x': 0, 'y': 0, 'oimg': 0, 'kill': 0, 'show': 1}
+OBJECT_BASE_DATA = {'x': 0, 'y': 0, 'oimg': 0, 'kill': 0, 'show': 1, 'setretimg': 0, 'script': 'pass'}
+BULLET_BASE_DATA = {'x': 6, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1, 'aitime': 0, 'aispd': 0}
 
 
 class Upgrade(pygame.sprite.Sprite):
@@ -52,6 +53,11 @@ class Object(pygame.sprite.Sprite):
     def update(self):
         data = {a: self.data[a] for a in self.data}
         data = eval(self.data['script'])
+        if data['kill']:
+            self.kill()
+        if data['setretimg']:
+            self.image = data['image']
+            data['setretimg'] = 0
         self.rect.x = data['x']
         self.rect.y = data['y']
         if data['show'] == 0:
@@ -70,12 +76,14 @@ def cut(image):
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, data, camx):
-        if data['type'] == 'enemy':
+        self.data = {}
+        self.setup(BULLET_BASE_DATA)
+        self.setup(data[0])
+        self.setup(data[1])        
+        if self.data['type'] == 'enemy':
             super().__init__(bull, ebull)
         else:
             super().__init__(bull)
-        self.data = {}
-        self.setup(data)
         self.data['x'] += x
         self.data['y'] += y
         self.rect.x = self.data['x'] - camx
@@ -92,9 +100,23 @@ class Bullet(pygame.sprite.Sprite):
     def update(self, camx=0): # move&collidle
         if self.rect.y < -100 or self.rect.y > 640 or self.rect.x > 480 or self.rect.x < -100:
             self.kill()
+        if self.data['aitime'] and self.data['type'] == 'enemy':
+            data = player.sprites()[0].data
+            posx = data['x'] - self.data['x'] + data['size'][0] // 2
+            posy = data['y'] - self.data['y'] + data['size'][1] // 2
+            dis = (posx ** 2 + posy ** 2) ** 0.5
+            if dis != 0:
+                vx = posx / dis * self.data['aispd']
+                vy = posy / dis * self.data['aispd']
+            else:
+                posx = 0
+                posy = 0
+            self.data['aitime'] -= 1
+            self.data['vx'] = vx
+            self.data['vy'] = vy
         self.data['x'] += self.data['vx']
-        self.rect.x = self.data['x'] - camx
         self.data['y'] += self.data['vy']
+        self.rect.x = self.data['x'] - camx
         self.rect.y = self.data['y']
         if self.data['type'] == 'player':
             h = pygame.sprite.spritecollide(self, enemy, False)
@@ -148,7 +170,6 @@ class Entity(pygame.sprite.Sprite):
                 self.data['fire'] -= 1
                 for dat in self.data['bul']:
                     data = dat
-                    data['type'] = self.data['type']
                     Bullet(x=self.data['x'], y=self.data['y'], data=data, camx=camx)
             if self.data['type'] == 'player':
                 h = pygame.sprite.spritecollide(self, ebull, False)
@@ -263,13 +284,6 @@ def play(spd=0.1):
                     mappos += 1
                 else:
                     break
-        '''s = score
-        for sp in range(10):
-            if s or not sp:
-                sc[sp].image = oimages[s % 10]
-            else:
-                sc[sp].image = oimages[10]
-            s = s // 10'''
         win.update(mode=1, camx=camx)
         bull.update(camx=camx)
         enemy.update(mode=1, camx=camx)
@@ -398,9 +412,13 @@ imagess = []
 oimages = []
 bg = []
 emap = []
+bullet = open('Bullets.txt').readlines()
+bullets = {}
+for a in bullet:
+    aa = a.strip('\n').split('>')
+    bullets[aa[0]] = eval(aa[1])
 entity = open('Entity.txt').readlines()
 entitys = {}
 for a in entity:
     aa = a.strip('\n').split('>')
     entitys[aa[0]] = eval(aa[1])
-

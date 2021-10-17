@@ -498,3 +498,5 @@
 3658>Entity(entitys['1'], x=463, y=0)
 3664>Entity(entitys['0'], x=497, y=0)
 3668>Entity(entitys['1'], x=97, y=0)
+4200>Entity(entitys['2'], x=50, y=0)
+4200>Object(x=0, y=50, oimg=12, xb=21, xs=438, yb=5, ys=30, hp=enemy.sprites()[-1].data['hp'], imageb=oimages[12], spr=enemy.sprites()[-1], script="Scripts.hpbar(data)")
