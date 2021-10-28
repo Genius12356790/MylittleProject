@@ -6,8 +6,8 @@ import Scripts
 import random
 
 FRAMETIME = 1/60
-ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 0.5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':320, 'y':480, 'type':'enemy', 'hp':3, 'score':50, 'static':1, 'lives':0, 'level':0, 'levels':[], 'shield': 120}
-OBJECT_BASE_DATA = {'x': 0, 'y': 0, 'oimg': 0, 'kill': 0, 'show': 1, 'setretimg': 0, 'script': 'pass'}
+ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 0.5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':320, 'y':480, 'type':'enemy', 'spd':2, 'hp':3, 'score':50, 'static':1, 'lives':0, 'level':0, 'levels':[], 'shield': 120, 'large':0}
+OBJECT_BASE_DATA = {'x': 0, 'y': 0, 'oimg': 0, 'kill': 0, 'show': 1, 'setretimg': -1, 'script': 'pas(data)', 'time': -1}
 BULLET_BASE_DATA = {'x': 6, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1, 'aitime': 0, 'aispd': 0}
 
 
@@ -41,6 +41,10 @@ class Object(pygame.sprite.Sprite):
         self.setup(kwargs)
         self.rect.x = self.data['x']
         self.rect.y = self.data['y']
+        if self.data['setretimg'] != -1:
+            self.data['image'] = oimages[self.data['oimg']]
+        if self.data['show'] == 0:
+            self.image = deftex
         
     def setup(self, kwargs):
         for _ in kwargs:
@@ -53,19 +57,25 @@ class Object(pygame.sprite.Sprite):
     def update(self):
         data = {a: self.data[a] for a in self.data}
         data = eval(self.data['script'])
-        if data['kill']:
+        if data:
+            if data['kill']:
+                self.kill()
+            if data['setretimg'] == 1:
+                self.image = cut(data['image']).convert()
+                self.data['size'] = data['image'].get_rect().size
+                data['setretimg'] = 0
+            self.rect.x = data['x']
+            self.rect.y = data['y']
+            if data['show'] == 0:
+                self.image = deftex
+            elif (data['oimg'] != self.data['oimg'] or self.data['show'] == 0) and data['setretimg'] == -1:
+                    self.image = oimages[data['oimg']]
+            elif self.data['show'] == 0 and data['setretimg'] == 0:
+                self.image = data['image']
+            self.data = {a: data[a] for a in data}
+        if self.data['time'] == 0:
             self.kill()
-        if data['setretimg']:
-            self.image = data['image']
-            data['setretimg'] = 0
-        self.rect.x = data['x']
-        self.rect.y = data['y']
-        if data['show'] == 0:
-            self.image = deftex
-        else:
-            if data['oimg'] != self.data['oimg'] or self.data['show'] == 0:
-                self.image = oimages[data['oimg']]
-        self.data = {a: data[a] for a in data}
+        self.data['time'] -= 1        
 
 
 def cut(image):
@@ -133,7 +143,6 @@ class Entity(pygame.sprite.Sprite):
         self.setup(kwargs)
         if self.data['type'] == 'player':
             super().__init__(player)
-            self.basedata = {a: self.data[a] for a in self.data}
         else:
             super().__init__(enemy)
         
@@ -149,18 +158,20 @@ class Entity(pygame.sprite.Sprite):
                 self.rect.x = self.data['x']
             elif _ == 'y':
                 self.rect.y = self.data['y']
+            elif _ == 'shield':
+                self.basedata = {a: self.data[a] for a in ['shield']}
 
     def update(self, mode=0, x=0, y=0, img=0, fspd=0.066, dmg=1, dimg=0, camx=0, kwargs={}, keys=[0, 0, 0, 0]):
         global score
         if mode == 0: # move player
             if keys[1]:
-                self.data['x'] = max(self.data['x'] - 2, 0)
+                self.data['x'] = max(self.data['x'] - self.data['spd'], 0)
             if keys[3]:
-                self.data['x'] = min(self.data['x'] + 2, 640 - self.data['size'][0])
+                self.data['x'] = min(self.data['x'] + self.data['spd'], 640 - self.data['size'][0])
             if keys[0]:
-                self.data['y'] = max(self.data['y'] - 2, 0)
+                self.data['y'] = max(self.data['y'] - self.data['spd'], 0)
             if keys[2]:
-                self.data['y'] = min(self.data['y'] + 2, 640 - self.data['size'][1])
+                self.data['y'] = min(self.data['y'] + self.data['spd'], 640 - self.data['size'][1])
             self.rect.x = self.data['x'] - camx
             self.rect.y = self.data['y']
         elif mode == 1: # tick
@@ -183,14 +194,18 @@ class Entity(pygame.sprite.Sprite):
         elif mode == 2: # setup
             self.setup(kwargs)
         elif mode == 3: # death
-            if self.data['type'] == 'player' and self.data['shield'] < 0:
-                if self.data['lives'] > 0:
-                    self.basedata['lives'] = self.data['lives'] - 1
-                    Entity(self.basedata)
-                    self.kill()
+            if self.data['type'] == 'player' and self.data['shield'] < 0 and self.data['lives'] > -1:
+                self.data['lives'] -= 1
+                if self.data['lives'] >= 0:
+                    self.data['level'] = 0
+                    self.data['bul'] = self.data['levels'][0]
+                    self.data['shield'] = self.basedata['shield']
                 else:
                     self.data['fspd'] = 0
+                    self.data['spd'] = 0
                     self.image = deftex
+                    self.data['y'] = 0
+                    addevent('spd=0')
             elif self.data['type'] == 'enemy':
                 self.data['hp'] -= dmg
                 if self.data['hp'] < 1:
@@ -204,11 +219,11 @@ class Entity(pygame.sprite.Sprite):
             self.data['y'] += self.data['vy']
             self.rect.x = self.data['x'] - camx
             self.rect.y = self.data['y']
-            if self.rect.y < -100 or self.rect.y > 640 or self.rect.x > 480 or self.rect.x < -100:
+            if (self.rect.y < -100 or self.rect.y > 640 or self.rect.x > 480 or self.rect.x < -100)  and self.data['large'] == 0:
                 self.kill()
         elif mode == 5: # entity with tiles
             if self.data['static']:
-                self.rect.y += 1
+                self.data['y'] += 1
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, posa, posb):
@@ -233,12 +248,12 @@ class Tile(pygame.sprite.Sprite):
             self.image = images[bg[self.filey % bgy][self.filex % bgx]]
 
 
-def play(spd=0.1):
+def play(spd=0.5):
+    global events, score
     camx = 0
     ypos = 0
     mappos = 0
     tick = 0
-    keys = [False] * 4
     lastframe = time.process_time()
     fps = 0
     fpsc = 0
@@ -246,6 +261,27 @@ def play(spd=0.1):
     tpsc = 0
     lastsec = 0
     while True:
+        e = events
+        events = []
+        for i in e:
+            if i == 'resetscore':
+                score = 0
+            if i == 'reset':
+                h = enemy.sprites()
+                for i in range(len(h) - 1, -1, -1):
+                    h[i].kill()
+                h = bull.sprites()
+                for i in range(len(h) - 1, -1, -1):
+                    h[i].kill()     
+                h = upg.sprites()
+                for i in range(len(h) - 1, -1, -1):
+                    h[i].kill()  
+                h = obj.sprites()
+                for i in range(len(h) - 1, 14, -1):
+                    h[i].kill()                      
+                return
+            elif i.split('=')[0] == 'spd':
+                spd = int(i.split('=')[1])            
         camx = player.sprites()[0].data['x'] // 4
         life = player.sprites()[0].data['lives']
         for event in pygame.event.get():
@@ -270,16 +306,16 @@ def play(spd=0.1):
                 if event.key == pygame.K_RIGHT:
                     keys[3] = False
         #do tick
-        player.update(keys=keys, camx=camx)
         player.update(mode=1, camx=camx)
+        player.update(keys=keys, camx=camx)
         tick += spd
-        if tick > 1:
+        while tick > 1:
             tick -= 1
             win.update()
             enemy.update(mode=5)
             ypos += 1
             while len(emap) != mappos:
-                if ypos == int(emap[mappos].split('>')[0]):
+                if ypos >= int(emap[mappos].split('>')[0]):
                     eval(emap[mappos].split('>')[1])
                     mappos += 1
                 else:
@@ -388,6 +424,15 @@ def livesobj(data, lives):
     else:
         data['show'] = 0
     return data
+
+def pas(data):
+    return data
+
+def addevent(name):
+    events.append(name)
+    
+def getscore():
+    return score
     
 
 # init
@@ -412,6 +457,8 @@ imagess = []
 oimages = []
 bg = []
 emap = []
+events = []
+keys = [False] * 4
 bullet = open('Bullets.txt').readlines()
 bullets = {}
 for a in bullet:
