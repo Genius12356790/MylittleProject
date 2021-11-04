@@ -1,0 +1,4 @@
+0>Object(x=160, y=150, oimg=16, time=180)
+300>Entity(entitys['2'], x=50, y=-350)
+300>Object(x=0, y=50, oimg=12, xb=21, xs=438, yb=5, ys=30, hp=enemy.sprites()[-1].data['hp'], imageb=oimages[12], spr=enemy.sprites()[-1], script="Scripts.hpbar(data)")
+650>addevent('spd=0')

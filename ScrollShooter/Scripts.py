@@ -18,7 +18,7 @@ def hpbar(data):
     data['image'] = image
     data['setretimg'] = 1
     if data['px'] <= 0 and data['time'] < 0:
-        data['time'] = 180
+        data['time'] = 600
     if data['time'] == 1:
         data['script'] = "addevent('reset')"
     return data

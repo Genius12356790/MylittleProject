@@ -6,7 +6,7 @@ import Scripts
 import random
 
 FRAMETIME = 1/60
-ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 0.5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':320, 'y':480, 'type':'enemy', 'spd':2, 'hp':3, 'score':50, 'static':1, 'lives':0, 'level':0, 'levels':[], 'shield': 120, 'large':0}
+ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 0.5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':320, 'y':480, 'type':'enemy', 'spd':2, 'hp':3, 'score':50, 'static':1, 'lives':0, 'level':0, 'levels':[], 'shield': 120, 'large':0, 'customhb': 0, 'hitbox': [[0, 0, 0, 0, 0]]}
 OBJECT_BASE_DATA = {'x': 0, 'y': 0, 'oimg': 0, 'kill': 0, 'show': 1, 'setretimg': -1, 'script': 'pas(data)', 'time': -1}
 BULLET_BASE_DATA = {'x': 6, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1, 'aitime': 0, 'aispd': 0}
 
@@ -129,10 +129,22 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.x = self.data['x'] - camx
         self.rect.y = self.data['y']
         if self.data['type'] == 'player':
-            h = pygame.sprite.spritecollide(self, enemy, False)
+            '''h = pygame.sprite.spritecollide(self, enemy, False)
             if h:
                 h[0].update(mode=3, dmg=self.data['dmg'])
-                self.kill()
+                self.kill()'''
+            h = enemy.sprites()
+            for i in range(len(h)):
+                if h[i].data['customhb'] == 0:
+                    if h[i].data['x'] < self.data['x'] + self.data['size'][0] and h[i].data['x'] + h[i].data['size'][0] > self.data['x'] and h[i].data['y'] < self.data['y'] + self.data['size'][1] and h[i].data['y'] + h[i].data['size'][1] > self.data['y']:
+                        h[i].update(mode=3, dmg=self.data['dmg'])
+                        self.kill()
+                else:
+                    for ii in h[i].data['hitbox']:
+                        if ii[0] + h[i].data['x'] < self.data['x'] + self.data['size'][0] and ii[2] + h[i].data['x'] > self.data['x'] and ii[1] + h[i].data['y'] < self.data['y'] + self.data['size'][1] and ii[3] + h[i].data['y'] > self.data['y']:
+                            if ii[4]:
+                                h[i].update(mode=3, dmg=self.data['dmg'])
+                            self.kill()                        
 
 
 class Entity(pygame.sprite.Sprite):
