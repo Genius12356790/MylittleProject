@@ -6,7 +6,7 @@ import Scripts
 import random
 
 FRAMETIME = 1/60
-ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 0.5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':320, 'y':480, 'type':'enemy', 'spd':2, 'hp':3, 'score':50, 'static':1, 'lives':0, 'level':0, 'levels':[], 'shield': 120, 'large':0, 'customhb': 0, 'hitbox': [[0, 0, 0, 0, 0]]}
+ENTITY_BASE_DATA = {'fire':0, 'fspd':0.5, 'vx':0, 'vy':0.5, 'dimg':0, 'bul':({'x': 0, 'y': 0, 'vx': 0, 'vy': 0.5, 'bimg': 1, 'dmg': 1}), 'simg':0, 'x':320, 'y':480, 'type':'enemy', 'spd':2, 'hp':3, 'score':50, 'static':1, 'lives':0, 'level':0, 'levels':[], 'shield': 120, 'large':0, 'customhb': 0, 'hitbox': []}
 OBJECT_BASE_DATA = {'x': 0, 'y': 0, 'oimg': 0, 'kill': 0, 'show': 1, 'setretimg': -1, 'script': 'pas(data)', 'time': -1}
 BULLET_BASE_DATA = {'x': 6, 'y': 8, 'vx': 0, 'vy': -5, 'bimg': 1, 'dmg': 1, 'aitime': 0, 'aispd': 0}
 
@@ -15,6 +15,7 @@ class Upgrade(pygame.sprite.Sprite):
     def __init__(self, x, y, name):
         super().__init__(upg)
         self.data = {a: entitys[name][a] for a in entitys[name]}  
+        self.data['eval'] = []
         self.image = imagess[self.data['simg']]
         self.rect = self.image.get_rect().move(x, y) 
         self.data['x'] = x
@@ -29,14 +30,17 @@ class Upgrade(pygame.sprite.Sprite):
             if self.rect.y < -100 or self.rect.y > 640 or self.rect.x > 480 or self.rect.x < -100:
                 self.kill()
         if mode == 1:
-            eval(self.data['func'])
+            data = eval(self.data['func'])
+            if data:
+                for i in data['eval']:
+                    eval(i)
             self.kill()
     
 
 class Object(pygame.sprite.Sprite):
     def __init__(self, **kwargs):
         super().__init__(obj)
-        self.data = {}
+        self.data = {'eval': []}
         self.setup(OBJECT_BASE_DATA)
         self.setup(kwargs)
         self.rect.x = self.data['x']
@@ -58,6 +62,9 @@ class Object(pygame.sprite.Sprite):
         data = {a: self.data[a] for a in self.data}
         data = eval(self.data['script'])
         if data:
+            for i in data['eval']:
+                eval(i)
+            data['eval'] = []
             if data['kill']:
                 self.kill()
             if data['setretimg'] == 1:
@@ -368,6 +375,7 @@ def draw(fps, tps):
         textout(str(fps), [400, 0], size=10, color=(250 * (1 / FRAMETIME - fps) * FRAMETIME, 250 * fps * FRAMETIME, 50))
     if tps < 0.95 * 1 / FRAMETIME:
         textout(str(int(tps * FRAMETIME * 100)) + '%', [430, 0], size=10, color=(250 * (1 / FRAMETIME - tps) * FRAMETIME, 250 * tps * FRAMETIME, 50))
+    textout('Engine ver. 0.8', [415, 625], size=10, color=(50, 50, 50))
     pygame.display.flip()    
         
 def initgame():
@@ -437,6 +445,11 @@ def livesobj(data, lives):
         data['show'] = 0
     return data
 
+def pow0(data):
+    if data['level'] + 1 < len(data['levels']):
+        data['level'] += 1
+        data['bul'] = data['levels'][data['level']].copy()
+
 def pas(data):
     return data
 
@@ -445,6 +458,10 @@ def addevent(name):
     
 def getscore():
     return score
+
+def setscore(s):
+    global score
+    score = s
     
 
 # init
