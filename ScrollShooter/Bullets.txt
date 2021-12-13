@@ -2,5 +2,6 @@
 -11>{'x': 1, 'y': 8, 'vx': 0, 'vy': -5, 'aitime': 0, 'aispd': 0, 'bimg': 7, 'dmg': 2, 'type': 'player'}
 0>{'x': 6, 'y': 8, 'vx': 0, 'vy': 5, 'aitime': 0, 'aispd': 0, 'bimg': 1, 'type': 'enemy'}
 10>{'x': 10, 'y': 20, 'vx': 0, 'vy': 0, 'aitime': 0, 'aispd': 0, 'bimg': 5, 'type': 'enemy'}
-11>{'x': 0, 'y': 0, 'vx': 0, 'vy': 9, 'aitime': 0, 'aispd': 0, 'bimg': 13, 'type': 'enemy'}
+11>{'x': 0, 'y': 0, 'vx': 0, 'vy': 9, 'aitime': 0, 'aispd': 0, 'bimg': 13, 'type': 'enemy', 'hitbox': [[10, 0, 90, 100, 1], [0, 10, 100, 90, 1]]}
 20>{'x': 10, 'y': 20, 'vx': 0, 'vy': -2, 'aitime': 600, 'aispd': 0.7, 'bimg': 10, 'type': 'enemy'}
+21>{'x': 10, 'y': 20, 'vx': 0, 'vy': 0, 'aitime': 1, 'aispd': 4, 'bimg': 10, 'type': 'enemy'}
